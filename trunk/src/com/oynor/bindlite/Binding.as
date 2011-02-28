@@ -34,7 +34,7 @@ package com.oynor.bindlite
 			{
 				if (compareFuction != null)
 				{
-					isDirty = compareFuction.apply( null, [ val, source[key] ] );
+					isDirty = !compareFuction.apply( null, [ val, source[key] ] );
 					if (isDirty) source[key] = val;
 				}
 				else if (source[key] !== val)
