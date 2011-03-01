@@ -147,7 +147,7 @@ package com.oynor.bindlite
 			}
 			else
 			{
-				throw new ArgumentError( "No key/accessor named \"" + key + "\" in " + source );
+				throw new ArgumentError( "No property/accessor named \"" + key + "\" in " + source );
 			}
 
 			_bindings[key] = new Binding( key, source, getDefinitionByName( dataTypeName ) as Class, compareFunction );
