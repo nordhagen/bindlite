@@ -136,7 +136,7 @@ package com.oynor.bindlite
 			}
 			else if (def.accessor.(@name == key).length() > 0)
 			{
-				if (def.accessor.(@name == key)[0].access == "readwrite")
+				if (def.accessor.(@name == key)[0].@access == "readwrite")
 				{
 					dataTypeName = def.accessor.(@name == key)[0].@type;
 				}
