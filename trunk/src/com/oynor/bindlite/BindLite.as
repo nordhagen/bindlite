@@ -1,9 +1,11 @@
 package com.oynor.bindlite
 {
 	import flash.errors.IllegalOperationError;
+	import flash.utils.ByteArray;
 	import flash.utils.Dictionary;
 	import flash.utils.describeType;
 	import flash.utils.getDefinitionByName;
+	import flash.utils.getQualifiedClassName;
 
 	/**
 	 * Minimal replacement for Flex data binding using <code>[Bindable]</code> meta.  
@@ -13,13 +15,14 @@ package com.oynor.bindlite
 	public class BindLite
 	{
 		private static var _bindings:Dictionary = new Dictionary( true );
+		private static var _autoDisposeBindings:Boolean;
 
 		/**
 		 * Defines a new binable property as a string representation of an available property on the source argument.
 		 * This property must be either a public var or getter/setter pair.
 		 * @param key The property name 
 		 * @param source The object containing the property
-		 * @param compareFunction Referance to a function that takes two instances of this binding's datatype as arguments and returns true if they are equal
+		 * @param compareFunction Reference to a function that takes two instances of this binding's datatype as arguments and returns true if they are equal
 		 * @return void
 		 */
 		public static function define ( key:String, source:Object, compareFunction:Function = null ):void
@@ -36,10 +39,18 @@ package com.oynor.bindlite
 		public static function update ( key:String, value:* ):void
 		{
 			var binding:Binding = _getBinding( key );
-			binding.value = value;
-			if (binding.isDirty)
+			if (value is binding.dataType)
 			{
-				_propagate( binding );
+				if (!binding.equals( value ))
+				{
+					binding.lastValue = _clone( binding.value );
+					binding.value = value;
+					_propagate( binding );
+				}
+			}
+			else
+			{
+				throw new ArgumentError( "Type mismatch in binding " + key + ". Expected " + getQualifiedClassName( binding.dataType ) + ", was " + getQualifiedClassName( value ) );
 			}
 		}
 
@@ -71,6 +82,7 @@ package com.oynor.bindlite
 			{
 				var binding:Binding = _getBinding( key );
 				binding.targets.splice( binding.targets.indexOf( target ), 1 );
+				if (_autoDisposeBindings) _evalAutoDispose( binding );
 			}
 			else
 			{
@@ -81,11 +93,66 @@ package com.oynor.bindlite
 		/**
 		 * Retrieves the value of a bindable property manually
 		 * @param key The predefined bindable property name
-		 * @return void
+		 * @return Value of bound property
 		 */
 		public static function retrieve ( key:String ):*
 		{
 			return _getBinding( key ).value;
+		}
+
+		/**
+		 * Retrieves the previous value of a bindable property
+		 * @param key The predefined bindable property name
+		 * @return Previous value of bound property
+		 */
+		public static function retrieveLast ( key:String ):*
+		{
+			return _getBinding( key ).lastValue;
+		}
+
+		static public function get autoDisposeBindings ():Boolean
+		{
+			return _autoDisposeBindings;
+		}
+
+		static public function set autoDisposeBindings ( autoDisposeBindings:Boolean ):void
+		{
+			_autoDisposeBindings = autoDisposeBindings;
+			_evalAutoDispose();
+		}
+
+		public static function desposeBinding ( key:String ):void
+		{
+			_dispose( _getBinding( key ) );
+		}
+
+		private static function _evalAutoDispose ( binding:Binding = null ):void
+		{
+			if (binding && binding.targets.length == 0)
+			{
+				_dispose( binding );
+			}
+			else
+			{
+				for each (binding in _bindings)
+				{
+					if (binding.targets.length == 0) _dispose( binding );
+				}
+			}
+		}
+
+		private static function _dispose ( binding:Binding ):void
+		{
+			delete _bindings[binding.key];
+			binding.dispose();
+		}
+
+		private static function _clone ( value:* ):*
+		{
+			var myBA:ByteArray = new ByteArray();
+			myBA.writeObject( value );
+			myBA.position = 0;
+			return(myBA.readObject());
 		}
 
 		private static function _propagate ( binding:Binding ):void
@@ -94,7 +161,6 @@ package com.oynor.bindlite
 			{
 				target[binding.key] = binding.value;
 			}
-			binding.isDirty = false;
 		}
 
 		private static function _getBinding ( key:String ):Binding
@@ -117,6 +183,7 @@ package com.oynor.bindlite
 				if (binding.targets.indexOf( target ) != -1)
 				{
 					binding.targets.splice( binding.targets.indexOf( target ), 1 );
+					if (_autoDisposeBindings) _evalAutoDispose( binding );
 				}
 			}
 		}

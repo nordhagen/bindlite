@@ -27,16 +27,23 @@ package
 			_view.x = (stage.stageWidth - _view.width) * 0.5;
 			_view.y = (stage.stageHeight - _view.height) * 0.5;
 			addChild( _view );
-			
+
 			/*
-			 * Binding the value of "message" to the view.
+			 * Binding the value of "message".
 			 * BindLite will look for a public property or setter by the same name
 			 * upon initiating this binding and it will throw an error if it cannot
 			 * be found or has a different data type than the source property.
-			 * 
-			 * Using "initialPush:true" to have BindLite update the view immediately.
 			 */
-			BindLite.bind( Bindable.MESSAGE, _view, true );
+			BindLite.bind( Bindable.MESSAGE, this, true );
+		}
+
+		/*
+		 * EXAMPLE: retrieving the previous value of the binding and appending it to
+		 * the current value.
+		 */
+		public function set message ( val:String ):void
+		{
+			_view.message = val + ", last was " + BindLite.retrieveLast( Bindable.MESSAGE );
 		}
 
 		private function _configureStage ():void
