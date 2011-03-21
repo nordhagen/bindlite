@@ -14,8 +14,8 @@ package com.oynor.bindlite
 	 */
 	public class BindLite
 	{
+		public static var autoDisposeBindings:Boolean;
 		private static var _bindings:Dictionary = new Dictionary( true );
-		private static var _autoDisposeBindings:Boolean;
 
 		/**
 		 * Defines a new binable property as a string representation of an available property on the source argument.
@@ -82,7 +82,7 @@ package com.oynor.bindlite
 			{
 				var binding:Binding = _getBinding( key );
 				binding.targets.splice( binding.targets.indexOf( target ), 1 );
-				if (_autoDisposeBindings) _evalAutoDispose( binding );
+				if (autoDisposeBindings) _evalAutoDispose( binding );
 			}
 			else
 			{
@@ -108,17 +108,6 @@ package com.oynor.bindlite
 		public static function retrieveLast ( key:String ):*
 		{
 			return _getBinding( key ).lastValue;
-		}
-
-		static public function get autoDisposeBindings ():Boolean
-		{
-			return _autoDisposeBindings;
-		}
-
-		static public function set autoDisposeBindings ( autoDisposeBindings:Boolean ):void
-		{
-			_autoDisposeBindings = autoDisposeBindings;
-			_evalAutoDispose();
 		}
 
 		public static function desposeBinding ( key:String ):void
@@ -183,7 +172,7 @@ package com.oynor.bindlite
 				if (binding.targets.indexOf( target ) != -1)
 				{
 					binding.targets.splice( binding.targets.indexOf( target ), 1 );
-					if (_autoDisposeBindings) _evalAutoDispose( binding );
+					if (autoDisposeBindings) _evalAutoDispose( binding );
 				}
 			}
 		}
