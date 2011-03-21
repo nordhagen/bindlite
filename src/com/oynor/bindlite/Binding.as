@@ -1,7 +1,5 @@
 package com.oynor.bindlite
 {
-	import flash.utils.getQualifiedClassName;
-
 	/**
 	 * @author Oyvind Nordhagen
 	 * @date 4. feb. 2011
@@ -13,7 +11,7 @@ package com.oynor.bindlite
 		internal var dataType:Class;
 		internal var targets:Vector.<Object> = new Vector.<Object>();
 		internal var compareFuction:Function;
-		internal var isDirty:Boolean;
+		internal var lastValue:*;
 
 		public function Binding ( name:String, source:Object, dataType:Class = null, compareFuction:Function = null )
 		{
@@ -23,30 +21,40 @@ package com.oynor.bindlite
 			this.compareFuction = compareFuction;
 		}
 
-		public function get value ():*
+		internal function get value ():*
 		{
 			return source[key];
 		}
 
-		public function set value ( val:* ):void
+		internal function set value ( val:* ):void
 		{
-			if (val is dataType)
+			source[key] = val;
+		}
+
+		internal function equals ( val:* ):Boolean
+		{
+			if (compareFuction != null)
 			{
-				if (compareFuction != null)
-				{
-					isDirty = !compareFuction.apply( null, [ val, source[key] ] );
-					if (isDirty) source[key] = val;
-				}
-				else if (source[key] !== val)
-				{
-					source[key] = val;
-					isDirty = true;
-				}
+				return compareFuction.apply( null, [ val, source[key] ] );
+			}
+			else if (source[key] !== val)
+			{
+				return false;
 			}
 			else
 			{
-				throw new ArgumentError( "Type mismatch in binding " + key + ". Expected " + getQualifiedClassName( dataType ) + ", was " + getQualifiedClassName( val ) );
+				return true;
 			}
+		}
+
+		internal function dispose ():void
+		{
+			source = null;
+			dataType = null;
+			compareFuction = null;
+			targets.length = 0;
+			value = null;
+			lastValue = null;
 		}
 	}
 }
