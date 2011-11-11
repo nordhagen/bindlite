@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>BindLiteExample</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>com.powerflasher.fdt.core.FlashBuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>com.powerflasher.fdt.core.FlashNature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>BindLite_src</name>
+			<type>2</type>
+			<locationURI>BindLite_src</locationURI>
+		</link>
+		<link>
+			<name>MinimalComps.swc</name>
+			<type>1</type>
+			<locationURI>MinimalComps</locationURI>
+		</link>
+	</linkedResources>
+</projectDescription>
