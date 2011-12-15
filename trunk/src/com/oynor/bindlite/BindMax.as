@@ -1,5 +1,4 @@
 package com.oynor.bindlite {
-	import flash.errors.IllegalOperationError;
 	import flash.utils.ByteArray;
 	import flash.utils.Dictionary;
 	import flash.utils.describeType;
@@ -14,7 +13,7 @@ package com.oynor.bindlite {
 	 */
 	public class BindMax {
 		private var _autoDisposeBindings:Boolean;
-		protected var bindings:Dictionary = new Dictionary( true );
+		protected var bindings:Dictionary;
 		protected var classDefinition:XML;
 
 		/**
@@ -23,9 +22,9 @@ package com.oynor.bindlite {
 		 * @param autoEnumerate Enumerates bindings upon instantiation if true (default)   
 		 * @return BindMax instance
 		 */
-		public function BindMax ( autoEnumerate:Boolean = true, allowNull:Boolean = true ) {
-			classDefinition = describeType( this );
-			if (autoEnumerate) _enumerateBindings( allowNull );
+		public final function BindMax ( autoEnumerate:Boolean = true, allowNull:Boolean = true ) {
+			init();
+			if (autoEnumerate) enumerateBindings( allowNull );
 		}
 
 		/**
@@ -34,7 +33,7 @@ package com.oynor.bindlite {
 		 * @param compareFunction Reference to a function that takes two instances of this binding's datatype as arguments and returns true if they are equal
 		 * @return void
 		 */
-		public function setCompareFunction ( key:String, compareFunction:Function ):void {
+		public final function setCompareFunction ( key:String, compareFunction:Function ):void {
 			getBinding( key ).compareFuction = compareFunction;
 		}
 
@@ -43,7 +42,7 @@ package com.oynor.bindlite {
 		 * @param key The property name
 		 * @return Function or null if not defined
 		 */
-		public function getCompareFunction ( key:String ):Function {
+		public final function getCompareFunction ( key:String ):Function {
 			return getBinding( key ).compareFuction;
 		}
 
@@ -53,18 +52,20 @@ package com.oynor.bindlite {
 		 * @param value The new value
 		 * @return void
 		 */
-		public function update ( key:String, value:*, forcePropagation:Boolean = false ):void {
+		public final function update ( key:String, value:*, forcePropagation:Boolean = false ):Boolean {
 			var binding:Binding = getBinding( key );
 			if ((value != null || binding.allowNull) || value is binding.dataType) {
 				if (forcePropagation || binding.forcePropagation || !binding.equals( value )) {
 					binding.lastValue = clone( binding.value );
 					binding.value = value;
 					propagate( binding );
+					return true;
 				}
 			}
 			else {
 				throw new ArgumentError( "Type mismatch in binding \"" + key + "\". Expected " + getQualifiedClassName( binding.dataType ) + ", was " + getQualifiedClassName( value ) );
 			}
+			return false;
 		}
 
 		/**
@@ -74,10 +75,10 @@ package com.oynor.bindlite {
 		 * @param initialPush If true, updates the property on the target immediately after binding
 		 * @return void
 		 */
-		public function bind ( key:String, target:Object, initialPush:Boolean = false ):void {
+		public final function bind ( key:String, target:Object, initialPush:Boolean = false ):void {
 			if (!hasBinding( key, target )) {
 				var binding:Binding = getBinding( key );
-				_validateBindable( target, key, binding );
+				validateBindable( target, key, binding );
 				getBinding( key ).targets.push( target );
 				if (initialPush) target[key] = getBinding( key ).value;
 			}
@@ -92,11 +93,11 @@ package com.oynor.bindlite {
 		 * @param target The target object to check agains the binding
 		 * @return void
 		 */
-		public function hasBinding ( key:String, target:Object ):Boolean {
+		public final function hasBinding ( key:String, target:Object ):Boolean {
 			var binding:Binding = getBinding( key );
 
 			for each (var boundTarget:Object in binding.targets) {
-				if (getQualifiedClassName( boundTarget ) == getQualifiedClassName( target )) {
+				if (boundTarget == target ) {
 					return true;
 				}
 			}
@@ -110,7 +111,7 @@ package com.oynor.bindlite {
 		 * @param key Optional predefined bindable property name. If specified, only this binding is removed.
 		 * @return void
 		 */
-		public function unbind ( target:Object, key:String = null ):void {
+		public final function unbind ( target:Object, key:String = null ):void {
 			if (key) {
 				var binding:Binding = getBinding( key );
 				binding.targets.splice( binding.targets.indexOf( target ), 1 );
@@ -126,7 +127,7 @@ package com.oynor.bindlite {
 		 * @param key The predefined bindable property name
 		 * @return Value of bound property
 		 */
-		public function retrieve ( key:String ):* {
+		public final function retrieve ( key:String ):* {
 			return getBinding( key ).value;
 		}
 
@@ -135,29 +136,29 @@ package com.oynor.bindlite {
 		 * @param key The predefined bindable property name
 		 * @return Previous value of bound property
 		 */
-		public function retrieveLast ( key:String ):* {
+		public final function retrieveLast ( key:String ):* {
 			return getBinding( key ).lastValue;
 		}
-		
+
 		/**
 		 * Manually removes the data binding
 		 * @param key The predefined bindable property name of the binding
 		 */
-		public function disposeBinding ( key:String ):void {
+		public final function disposeBinding ( key:String ):void {
 			dispose( getBinding( key ) );
 		}
-		
+
 		/**
 		 * Defines whether bindings are automatically disposed when their list of listeners goes empty
 		 */
-		public function get autoDisposeBindings ():Boolean {
+		public final function get autoDisposeBindings ():Boolean {
 			return _autoDisposeBindings;
 		}
 
 		/**
 		 * Defines whether bindings are automatically disposed when their list of listeners goes empty
 		 */
-		public function set autoDisposeBindings ( autoDisposeBindings:Boolean ):void {
+		public final function set autoDisposeBindings ( autoDisposeBindings:Boolean ):void {
 			_autoDisposeBindings = autoDisposeBindings;
 			if (_autoDisposeBindings) {
 				for each (var binding:Binding in bindings) {
@@ -165,18 +166,18 @@ package com.oynor.bindlite {
 				}
 			}
 		}
-		
+
 		/**
 		 * Resets the supplied binding keys to the value they had at the time they were defined
 		 * @param keys Comma separated list of predefined bindable property names
 		 */
-		public function reset ( ...keys ):void {
+		public final function reset ( ...keys ):void {
 			for each (var key:String in keys) {
 				bindings[key].reset();
 			}
 		}
 
-		protected function evalAutoDispose ( binding:Binding = null ):void {
+		protected final function evalAutoDispose ( binding:Binding = null ):void {
 			if (binding && binding.targets.length == 0) {
 				dispose( binding );
 			}
@@ -187,25 +188,25 @@ package com.oynor.bindlite {
 			}
 		}
 
-		protected function dispose ( binding:Binding ):void {
+		protected final function dispose ( binding:Binding ):void {
 			delete bindings[binding.key];
 			binding.dispose();
 		}
 
-		protected function clone ( value:* ):* {
+		protected final function clone ( value:* ):* {
 			var myBA:ByteArray = new ByteArray();
 			myBA.writeObject( value );
 			myBA.position = 0;
 			return(myBA.readObject());
 		}
 
-		protected function propagate ( binding:Binding ):void {
+		protected final function propagate ( binding:Binding ):void {
 			for each (var target:Object in binding.targets) {
 				target[binding.key] = binding.value;
 			}
 		}
 
-		protected function getBinding ( key:String ):Binding {
+		protected final function getBinding ( key:String ):Binding {
 			if (bindings[key] != undefined) {
 				return bindings[key];
 			}
@@ -214,7 +215,7 @@ package com.oynor.bindlite {
 			}
 		}
 
-		protected function unbindTargetFromAllKeys ( target:Object ):void {
+		protected final function unbindTargetFromAllKeys ( target:Object ):void {
 			for (var key:String in bindings) {
 				var binding:Binding = bindings[key];
 				if (binding.targets.indexOf( target ) != -1) {
@@ -231,9 +232,10 @@ package com.oynor.bindlite {
 		 * @param compareFunction Reference to a function that takes two instances of this binding's datatype as arguments and returns true if they are equal
 		 * @return void
 		 */
-		protected function define ( key:String, allowNull:Boolean = true, forcePropagation:Boolean = false, compareFunction:Function = null ):void {
+		protected final function define ( key:String, allowNull:Boolean = true, forcePropagation:Boolean = false, compareFunction:Function = null ):void {
+			if (!bindings) init();
 			if (bindings[key] != undefined) {
-				throw new IllegalOperationError( "Bindable key \"" + key + "\" is already defined" );
+				return;
 			}
 
 			var dataTypeName:String;
@@ -255,16 +257,17 @@ package com.oynor.bindlite {
 			bindings[key] = new Binding( key, this, getDefinitionByName( dataTypeName ) as Class, allowNull, forcePropagation, compareFunction );
 		}
 
-		private function _enumerateBindings ( allowNull:Boolean = true ):void {
+		protected final function enumerateBindings ( allowNull:Boolean = true ):void {
 			var publiclyAccessibleData:XMLList = classDefinition.variable + classDefinition.accessor.(@access == "readwrite");
 			var key:String;
+			if (!bindings) init();
 			for each (var item:XML in publiclyAccessibleData) {
 				key = item.@name;
-				bindings[key] = new Binding( key, this, getDefinitionByName( item.@type ) as Class, allowNull );
+				if (bindings[key] == undefined) bindings[key] = new Binding( key, this, getDefinitionByName( item.@type ) as Class, allowNull );
 			}
 		}
 
-		private function _validateBindable ( target:Object, key:String, binding:Binding ):void {
+		protected final function validateBindable ( target:Object, key:String, binding:Binding ):void {
 			var def:XML = describeType( target );
 			var dataTypeName:String;
 			if (def.variable.(@name == key).length() > 0) {
@@ -285,6 +288,11 @@ package com.oynor.bindlite {
 			if (binding.dataType !== getDefinitionByName( dataTypeName )) {
 				throw new ArgumentError( "Binding data type mismatch on key \"" + key + "\" from " + binding.source + " to " + target );
 			}
+		}
+
+		protected final function init ():void {
+			classDefinition = describeType( this );
+			bindings = new Dictionary( true );
 		}
 	}
 }
