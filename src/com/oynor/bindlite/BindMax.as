@@ -28,6 +28,18 @@ package com.oynor.bindlite {
 		}
 
 		/**
+		 * Sets whether a binding ignores comparison between old and new value when update is called.
+		 * If forcePropagation is true, a call to update will always propagate the new value even
+		 * if the new value is equal to the old value. 
+		 * @param key The property name
+		 * @param forcePropagation true to always propagate, false (default) to only propagate changed values
+		 * @return void
+		 */
+		public final function setForcedPropagation ( key:String, forcePropagation:Boolean ):void {
+			getBinding( key ).forcePropagation = forcePropagation;
+		}
+
+		/**
 		 * Sets the compare function for a binding. 
 		 * @param key The property name 
 		 * @param compareFunction Reference to a function that takes two instances of this binding's datatype as arguments and returns true if they are equal
@@ -168,12 +180,32 @@ package com.oynor.bindlite {
 		}
 
 		/**
-		 * Resets the supplied binding keys to the value they had at the time they were defined
+		 * Resets the supplied binding keys to the value they had at the time they were defined.
+		 * If no keys are supplied, all bindings will be reset.
 		 * @param keys Comma separated list of predefined bindable property names
 		 */
 		public final function reset ( ...keys ):void {
-			for each (var key:String in keys) {
-				bindings[key].reset();
+			if (keys.length) {
+				for each (var key:String in keys) {
+					bindings[key].reset();
+				}
+			}
+			else {
+				for each (var item:Binding in bindings) {
+					item.reset();
+				}
+			}
+		}
+
+		/**
+		 * Force propagates the values of all bindings to all targets at their current state.
+		 * TIP: If resetting the application/module with the reset function, you may call this function
+		 * afterwards to propagate the default values of all bindings to all targets. 
+		 * @return void
+		 */
+		public final function propagateAll ():void {
+			for each (var binding:Binding in bindings) {
+				propagate( binding );
 			}
 		}
 
